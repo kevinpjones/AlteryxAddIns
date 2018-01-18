@@ -60,12 +60,7 @@ namespace OmniBus.Framework.ConfigWindows
             int nToolId,
             string strToolName)
         {
-            var serialiser = new Serialisation.Serialiser<T>();
-
-            var doc = new XmlDocument();
-            doc.LoadXml($"<Config>{eConfig.InnerXml}</Config>");
-
-            this._config = eConfig.InnerText == string.Empty || doc.DocumentElement == null ? new T() : serialiser.Deserialise(doc.DocumentElement);
+            this._config = this.DeserializeConfiguration(eConfig);
 
             if (this._config is IConfigWithIncomingConnection configWithIncomingConnection)
             {
@@ -84,9 +79,7 @@ namespace OmniBus.Framework.ConfigWindows
         /// <param name="strDefaultAnnotation">The string default annotation.</param>
         public void SaveResultsToXml(XmlElement eConfig, out string strDefaultAnnotation)
         {
-            var serialiser = this.SerialiserFactory();
-            var ser = serialiser.Serialise(this._config);
-            eConfig.InnerXml = ser?.InnerXml ?? string.Empty;
+            eConfig.InnerXml = this.SerializeConfiguration();
             strDefaultAnnotation = this._config.ToString();
         }
 
@@ -99,6 +92,32 @@ namespace OmniBus.Framework.ConfigWindows
             control.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             control.Size = this.ClientSize;
             this.Controls.Add(control);
+        }
+
+        /// <summary>
+        /// Serializes the configuration object.
+        /// </summary>
+        /// <returns>The serialized representation of the current config object.</returns>
+        protected virtual string SerializeConfiguration()
+        {
+            var serialiser = this.SerialiserFactory();
+            var ser = serialiser.Serialise(this._config);
+            return ser?.InnerXml ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Deserializes the configuration.
+        /// </summary>
+        /// <param name="eConfig">The xml configuration element.</param>
+        /// <returns>Deserialized configuration object, or <c>null</c> if the configuration element is empty</returns>
+        protected virtual T DeserializeConfiguration(XmlElement eConfig)
+        {
+            var serialiser = new Serialisation.Serialiser<T>();
+
+            var doc = new XmlDocument();
+            doc.LoadXml($"<Config>{eConfig.InnerXml}</Config>");
+
+            return eConfig.InnerText == string.Empty || doc.DocumentElement == null ? new T() : serialiser.Deserialise(doc.DocumentElement);
         }
 
         /// <summary>
